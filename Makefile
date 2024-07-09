@@ -8,9 +8,9 @@ TARGET = twiboot
 SOURCE = $(wildcard *.c)
 
 # select MCU
-MCU = atmega88
+MCU = atmega328p
 
-AVRDUDE_PROG := -c avr910 -b 115200 -P /dev/ttyUSB0
+AVRDUDE_PROG := -c avrispmkii -P usb
 #AVRDUDE_PROG := -c dragon_isp -P usb
 
 # ---------------------------------------------------------------------------
@@ -42,7 +42,6 @@ endif
 ifeq ($(MCU), atmega328p)
 # (8Mhz internal RC-Osz., 2.7V BOD)
 AVRDUDE_MCU=m328p -F
-AVRDUDE_FUSES=lfuse:w:0xc2:m hfuse:w:0xdc:m efuse:w:0xfd:m
 
 BOOTLOADER_START=0x7C00
 endif
@@ -75,5 +74,3 @@ clean:
 install: $(TARGET).elf
 	avrdude $(AVRDUDE_PROG) -p $(AVRDUDE_MCU) -U flash:w:$(<:.elf=.hex)
 
-fuses:
-	avrdude $(AVRDUDE_PROG) -p $(AVRDUDE_MCU) $(patsubst %,-U %, $(AVRDUDE_FUSES))

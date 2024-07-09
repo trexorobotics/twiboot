@@ -62,23 +62,23 @@
 #error MCU not supported
 #endif
 
-#define EEPROM_SUPPORT		1
+#define EEPROM_SUPPORT		0
 #define LED_SUPPORT		1
 
 /* 25ms @8MHz */
 #define TIMER_RELOAD		(0xFF - 195)
 
-/* 40 * 25ms */
-#define TIMEOUT			40
+/* 80 * 25ms */
+#define TIMEOUT			80
 
 #if LED_SUPPORT
-#define LED_INIT()		DDRB = ((1<<PORTB4) | (1<<PORTB5))
-#define LED_RT_ON()		PORTB |= (1<<PORTB4)
-#define LED_RT_OFF()		PORTB &= ~(1<<PORTB4)
-#define LED_GN_ON()		PORTB |= (1<<PORTB5)
-#define LED_GN_OFF()		PORTB &= ~(1<<PORTB5)
-#define LED_GN_TOGGLE()		PORTB ^= (1<<PORTB5)
-#define LED_OFF()		PORTB = 0x00
+#define LED_INIT()		DDRD = (1<<PORTD0)
+#define LED_RT_ON()
+#define LED_RT_OFF()
+#define LED_GN_ON()		PORTD |= (1<<PORTD0)
+#define LED_GN_OFF()		PORTD &= ~(1<<PORTD0)
+#define LED_GN_TOGGLE()		PORTD ^= (1<<PORTD0)
+#define LED_OFF()		LED_GN_OFF()
 #else
 #define LED_INIT()
 #define LED_RT_ON()
@@ -90,11 +90,11 @@
 #endif
 
 #ifndef TWI_ADDRESS
-#define TWI_ADDRESS		0x29
+#define TWI_ADDRESS		0x08
 #endif
 
 /* SLA+R */
-#define CMD_WAIT		0x00
+#define CMD_WAIT		0x80
 #define CMD_READ_VERSION	0x01
 #define CMD_READ_MEMORY		0x02
 /* internal mappings */
@@ -394,7 +394,11 @@ ISR(TIMER0_OVF_vect)
 	TCNT0 = TIMER_RELOAD;
 
 	/* blink LED while running */
-	LED_GN_TOGGLE();
+	static uint8_t slow_flash = 0;
+	if(slow_flash++ == 5){
+		LED_GN_TOGGLE();
+		slow_flash = 0;
+	}
 
 	/* count down for app-boot */
 	if (boot_timeout > 1)
@@ -445,6 +449,8 @@ int main(void)
 #endif
 
 	/* TWI init: set address, auto ACKs with interrupts */
+	DDRC &= ~(PC4 | PC5);
+	PORTC |= (PC4 | PC5);
 	TWAR = (TWI_ADDRESS<<1);
 	TWCR = (1<<TWEA) | (1<<TWEN) | (1<<TWIE);
 
